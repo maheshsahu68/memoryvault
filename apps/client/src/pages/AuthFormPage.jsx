@@ -51,6 +51,7 @@ export default function AuthFormPage({ mode }) {
           {form.formState.isSubmitting ? 'Please wait…' : isRegister ? 'Create account' : 'Sign in'}
         </Button>
       </form>
+      {!isRegister && <Link className="mt-4 block text-right text-sm font-semibold text-violet-700 hover:text-violet-800" to="/forgot-password">Forgot password?</Link>}
       <p className="mt-5 text-center text-sm text-slate-600">
         {isRegister ? 'Already have an account?' : 'New to MemoryVault?'}{' '}
         <Link className="font-semibold text-violet-700 hover:text-violet-800" to={isRegister ? '/login' : '/register'}>

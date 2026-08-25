@@ -19,4 +19,25 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+api.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    const errorCode = error.response?.data?.error?.code;
+    const isRefreshRequest = originalRequest?.url?.includes('/api/auth/refresh');
+
+    if (errorCode === 'TOKEN_EXPIRED' && originalRequest && !originalRequest._retry && !isRefreshRequest) {
+      originalRequest._retry = true;
+      try {
+        await api.post('/api/auth/refresh');
+        return api(originalRequest);
+      } catch (refreshError) {
+        return Promise.reject(refreshError);
+      }
+    }
+
+    return Promise.reject(error);
+  },
+);
+
 export default api;

@@ -6,6 +6,8 @@ import ReceiverLayout from './layouts/ReceiverLayout.jsx';
 import PlaceholderPage from './pages/PlaceholderPage.jsx';
 import AuthFormPage from './pages/AuthFormPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
+import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
+import ResetPasswordPage from './pages/ResetPasswordPage.jsx';
 import ProtectedRoute from './routes/ProtectedRoute.jsx';
 
 export default function App() {
@@ -16,6 +18,8 @@ export default function App() {
           <Route path="/" element={<Navigate to="/login" replace />} />
           <Route path="/login" element={<AuthFormPage mode="login" />} />
           <Route path="/register" element={<AuthFormPage mode="register" />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
         </Route>
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>

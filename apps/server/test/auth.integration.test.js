@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import request from 'supertest';
@@ -6,6 +6,11 @@ import request from 'supertest';
 let mongoServer;
 let app;
 let User;
+const sentResetLinks = vi.hoisted(() => []);
+
+vi.mock('../src/services/emailService.js', () => ({
+  sendPasswordResetEmail: async ({ resetUrl }) => { sentResetLinks.push(resetUrl); },
+}));
 
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
@@ -40,7 +45,7 @@ afterAll(async () => {
   await mongoServer.stop();
 });
 
-describe('Phase 1B authentication', () => {
+describe('Phase 1B–1C authentication', () => {
   it('registers, logs in, protects /me, and logs out with CSRF validation', async () => {
     const agent = request.agent(app);
     const credentials = { name: 'Test Creator', email: 'creator@example.com', password: 'SafePassword123!' };
@@ -69,5 +74,29 @@ describe('Phase 1B authentication', () => {
     const login = await agent.post('/api/auth/login').send({ email: credentials.email, password: credentials.password }).expect(200);
     expect(login.headers['set-cookie']).toHaveLength(3);
     await agent.get('/api/auth/me').expect(200);
+
+    const refreshedCsrfCookie = login.headers['set-cookie'].find((cookie) => cookie.startsWith('csrfToken='));
+    const refreshedCsrfToken = refreshedCsrfCookie.split(';')[0].split('=').slice(1).join('=');
+    const refresh = await agent.post('/api/auth/refresh').set('X-CSRF-Token', refreshedCsrfToken).expect(200);
+    expect(refresh.headers['set-cookie']).toHaveLength(2);
+    await agent.get('/api/auth/me').expect(200);
+
+    await request(app).post('/api/auth/forgot-password').send({ email: credentials.email }).expect(200);
+    expect(sentResetLinks).toHaveLength(1);
+    const resetToken = new URL(sentResetLinks[0]).pathname.split('/').at(-1);
+    const resetUser = await User.findOne({ email: credentials.email }).select('+passwordResetToken +passwordResetExpires');
+    expect(resetUser.passwordResetToken).not.toBe(resetToken);
+    expect(resetUser.passwordResetExpires).toBeInstanceOf(Date);
+
+    await request(app).post('/api/auth/reset-password/not-a-real-token').send({ password: 'AnotherPassword123!', passwordConfirm: 'AnotherPassword123!' }).expect(400);
+    resetUser.passwordResetExpires = new Date(Date.now() - 1_000);
+    await resetUser.save({ validateBeforeSave: false });
+    await request(app).post(`/api/auth/reset-password/${resetToken}`).send({ password: 'AnotherPassword123!', passwordConfirm: 'AnotherPassword123!' }).expect(400);
+
+    await request(app).post('/api/auth/forgot-password').send({ email: credentials.email }).expect(200);
+    const validResetToken = new URL(sentResetLinks.at(-1)).pathname.split('/').at(-1);
+    await request(app).post(`/api/auth/reset-password/${validResetToken}`).send({ password: 'AnotherPassword123!', passwordConfirm: 'AnotherPassword123!' }).expect(200);
+    await request(app).post('/api/auth/login').send({ email: credentials.email, password: credentials.password }).expect(401);
+    await request(app).post('/api/auth/login').send({ email: credentials.email, password: 'AnotherPassword123!' }).expect(200);
   });
 });

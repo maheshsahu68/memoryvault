@@ -14,3 +14,13 @@ export const loginSchema = z.object({
   email: emailSchema,
   password: z.string().min(1, 'Password is required.').max(128),
 });
+
+export const forgotPasswordSchema = z.object({ email: emailSchema });
+
+export const resetPasswordSchema = z.object({
+  password: passwordSchema,
+  passwordConfirm: z.string().min(1, 'Please confirm your password.'),
+}).refine((values) => values.password === values.passwordConfirm, {
+  path: ['passwordConfirm'],
+  message: 'Passwords do not match.',
+});

@@ -26,6 +26,11 @@ export function setAuthCookies(res, accessToken, refreshToken) {
   res.cookie(env.CSRF_COOKIE_NAME, randomBytes(32).toString('hex'), baseCookieOptions(false));
 }
 
+export function setRefreshedAuthCookies(res, accessToken) {
+  res.cookie('accessToken', accessToken, { ...baseCookieOptions(true), maxAge: durationToMs(env.JWT_ACCESS_EXPIRES) });
+  res.cookie(env.CSRF_COOKIE_NAME, randomBytes(32).toString('hex'), baseCookieOptions(false));
+}
+
 export function clearAuthCookies(res) {
   res.clearCookie('accessToken', baseCookieOptions(true));
   res.clearCookie('refreshToken', baseCookieOptions(true));
