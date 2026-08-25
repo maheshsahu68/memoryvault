@@ -1,0 +1,10 @@
+{
+  "name": "@memoryvault/shared",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./errorCodes": "./constants/errorCodes.js",
+    "./eventTypes": "./constants/eventTypes.js"
+  }
+}
