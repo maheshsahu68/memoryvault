@@ -60,6 +60,7 @@ describe('Phase 1B–1C authentication', () => {
 
     await agent.get('/api/auth/me').expect(200).expect(({ body }) => {
       expect(body.data.user.email).toBe(credentials.email);
+      expect(body.data.user.createdAt).toBeTruthy();
     });
 
     await agent.post('/api/auth/logout').expect(403).expect(({ body }) => {

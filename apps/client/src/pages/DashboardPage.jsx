@@ -20,8 +20,17 @@ export default function DashboardPage() {
   return (
     <Card>
       <h1 className="text-2xl font-bold">Welcome, {user.name}</h1>
-      <p className="mt-2 text-slate-600">{user.email}</p>
-      <p className="mt-6 text-sm text-slate-500">Dashboard features are intentionally deferred to Phase 1D.</p>
+      <dl className="mt-6 space-y-3 text-sm">
+        <div>
+          <dt className="font-medium text-slate-500">Email</dt>
+          <dd className="mt-1 text-slate-900">{user.email}</dd>
+        </div>
+        <div>
+          <dt className="font-medium text-slate-500">Account created</dt>
+          <dd className="mt-1 text-slate-900">{user.createdAt ? new Intl.DateTimeFormat(undefined, { dateStyle: 'medium' }).format(new Date(user.createdAt)) : 'Unavailable'}</dd>
+        </div>
+      </dl>
+      <p className="mt-6 text-sm text-slate-500">Surprise and media features are not available yet.</p>
       <Button className="mt-6" variant="secondary" onClick={handleLogout}>Log out</Button>
     </Card>
   );
