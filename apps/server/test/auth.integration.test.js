@@ -101,3 +101,54 @@ describe('Phase 1B–1C authentication', () => {
     await request(app).post('/api/auth/login').send({ email: credentials.email, password: 'AnotherPassword123!' }).expect(200);
   });
 });
+
+describe('Phase 2 surprises CRUD', () => {
+  it('creates, lists, searches, filters, updates, duplicates, and deletes only the creator’s surprises', async () => {
+    const agent = request.agent(app);
+    const credentials = { name: 'Surprise Creator', email: 'surprise@example.com', password: 'SafePassword123!' };
+    const registration = await agent.post('/api/auth/register').send(credentials).expect(201);
+    const csrfCookie = registration.headers['set-cookie'].find((cookie) => cookie.startsWith('csrfToken='));
+    const csrfToken = csrfCookie.split(';')[0].split('=').slice(1).join('=');
+    const payload = {
+      eventType: 'birthday',
+      recipient: { name: 'Alex', nickname: 'Al' },
+      greeting: { title: 'Happy Birthday Alex', subtitle: 'A special day', letter: 'Have a wonderful birthday.' },
+      secretCode: 'AlexCode123',
+      schedule: { status: 'draft' },
+    };
+
+    const created = await agent.post('/api/surprises').set('X-CSRF-Token', csrfToken).send(payload).expect(201);
+    const surprise = created.body.data.surprise;
+    expect(surprise).toMatchObject({ eventType: 'birthday', recipient: { name: 'Alex' }, greeting: { title: 'Happy Birthday Alex' } });
+    expect(surprise.secretCode).not.toHaveProperty('hash');
+
+    const saved = await (await import('../src/models/Surprise.js')).default.findById(surprise.id).select('+secretCode.hash');
+    expect(saved.secretCode.hash).not.toBe(payload.secretCode);
+
+    await agent.get(`/api/surprises/${surprise.id}`).expect(200);
+    const updated = await agent.patch(`/api/surprises/${surprise.id}`).set('X-CSRF-Token', csrfToken).send({ greeting: { title: 'Updated Birthday' }, schedule: { status: 'published' } }).expect(200);
+    expect(updated.body.data.surprise.greeting.title).toBe('Updated Birthday');
+    expect(updated.body.data.surprise.schedule.status).toBe('published');
+
+    const duplicate = await agent.post(`/api/surprises/${surprise.id}/duplicate`).set('X-CSRF-Token', csrfToken).expect(201);
+    expect(duplicate.body.data.surprise.greeting.title).toBe('Updated Birthday (Copy)');
+    expect(duplicate.body.data.surprise.schedule.status).toBe('draft');
+
+    await agent.post('/api/surprises').set('X-CSRF-Token', csrfToken).send({ ...payload, eventType: 'anniversary', recipient: { name: 'Jamie' }, greeting: { title: 'Anniversary Celebration' }, secretCode: 'JamieCode123' }).expect(201);
+    const searched = await agent.get('/api/surprises?search=updated&limit=1').expect(200);
+    expect(searched.body.data.surprises).toHaveLength(1);
+    expect(searched.body.meta.total).toBe(2);
+    const filtered = await agent.get('/api/surprises?status=published&eventType=birthday').expect(200);
+    expect(filtered.body.data.surprises).toHaveLength(1);
+    expect(filtered.body.data.surprises[0].id).toBe(surprise.id);
+
+    const anotherAgent = request.agent(app);
+    const otherRegistration = await anotherAgent.post('/api/auth/register').send({ name: 'Other Creator', email: 'other@example.com', password: 'SafePassword123!' }).expect(201);
+    const otherCsrf = otherRegistration.headers['set-cookie'].find((cookie) => cookie.startsWith('csrfToken=')).split(';')[0].split('=').slice(1).join('=');
+    await anotherAgent.get(`/api/surprises/${surprise.id}`).expect(404);
+    await anotherAgent.delete(`/api/surprises/${surprise.id}`).set('X-CSRF-Token', otherCsrf).expect(404);
+
+    await agent.delete(`/api/surprises/${surprise.id}`).set('X-CSRF-Token', csrfToken).expect(200);
+    await agent.get(`/api/surprises/${surprise.id}`).expect(404);
+  });
+});

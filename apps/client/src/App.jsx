@@ -6,6 +6,9 @@ import ReceiverLayout from './layouts/ReceiverLayout.jsx';
 import PlaceholderPage from './pages/PlaceholderPage.jsx';
 import AuthFormPage from './pages/AuthFormPage.jsx';
 import DashboardPage from './pages/DashboardPage.jsx';
+import SurpriseListPage from './pages/SurpriseListPage.jsx';
+import SurpriseFormPage from './pages/SurpriseFormPage.jsx';
+import SurpriseDetailsPage from './pages/SurpriseDetailsPage.jsx';
 import ForgotPasswordPage from './pages/ForgotPasswordPage.jsx';
 import ResetPasswordPage from './pages/ResetPasswordPage.jsx';
 import ProtectedRoute from './routes/ProtectedRoute.jsx';
@@ -26,7 +29,10 @@ export default function App() {
         </Route>
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>
-            <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/dashboard" element={<SurpriseListPage />} />
+            <Route path="/dashboard/create" element={<SurpriseFormPage mode="create" />} />
+            <Route path="/dashboard/surprises/:id" element={<SurpriseDetailsPage />} />
+            <Route path="/dashboard/surprises/:id/edit" element={<SurpriseFormPage mode="edit" />} />
           </Route>
         </Route>
         <Route element={<ReceiverLayout />}>

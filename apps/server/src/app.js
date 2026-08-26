@@ -7,6 +7,7 @@ import helmet from 'helmet';
 import { env } from './config/env.js';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js';
 import authRoutes from './routes/authRoutes.js';
+import surpriseRoutes from './routes/surpriseRoutes.js';
 
 const app = express();
 const allowedOrigins = env.CLIENT_URL.split(',').map((origin) => origin.trim());
@@ -49,6 +50,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.use('/api/auth', authRateLimiter, authRoutes);
+app.use('/api/surprises', surpriseRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

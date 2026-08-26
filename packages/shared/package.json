@@ -9,6 +9,7 @@
   "exports": {
     "./errorCodes": "./constants/errorCodes.js",
     "./eventTypes": "./constants/eventTypes.js",
-    "./authSchemas": "./validators/authSchemas.js"
+    "./authSchemas": "./validators/authSchemas.js",
+    "./surpriseSchemas": "./validators/surpriseSchemas.js"
   }
 }
